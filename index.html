@@ -30,20 +30,16 @@
       background-color: #F8FAFC;
     }
 
-    /* Mobile: show one product per mobile screen with smooth scroll-down */
+    /* Mobile: 1 product per mobile screen height with smooth vertical scrolling */
     @media (max-width: 639px) {
-      html {
-        scroll-snap-type: y proximity;
-      }
       .gift-card {
         min-height: 76svh;
-        scroll-snap-align: center;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
       .gift-photo-wrap {
-        height: 60svh;
+        height: 54svh;
         aspect-ratio: auto !important;
       }
     }
@@ -51,25 +47,24 @@
 </head>
 <body class="min-h-screen text-slate-800 antialiased flex flex-col items-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
 
-  <main class="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8">
+  <main class="w-full max-w-5xl mx-auto space-y-5 sm:space-y-7">
 
     <!-- 1. Simple Header / Short Intro -->
-    <header class="text-center space-y-3 pt-2">
+    <header class="text-center space-y-3 pt-1">
       <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
         Vahe's Wishlist
       </h1>
-      <!-- Subtle Hot Wheels blue-orange accent bar -->
       <div class="flex items-center justify-center gap-1.5 py-1" aria-hidden="true">
         <span class="h-1.5 w-12 rounded-full bg-hwBlue"></span>
         <span class="h-1.5 w-4 rounded-full bg-slate-200"></span>
         <span class="h-1.5 w-12 rounded-full bg-hwOrange"></span>
       </div>
       <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
-        Welcome! Browse the gift photos below and select the one you would like to gift for Vahe. Each gift can only have one selection.
+        Welcome! Browse the numbered gift photos below and select the one you would like to gift for Vahe. Each gift can only be selected once.
       </p>
     </header>
 
-    <!-- 2. General Count / Progress Box (for Mama & guests) -->
+    <!-- 2. General Count / Live Progress Box (for Mama & viewers) -->
     <section aria-label="Wishlist Progress" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm max-w-2xl mx-auto w-full sticky top-3 z-30 backdrop-blur-md bg-white/95">
       <div class="flex items-center justify-between text-xs sm:text-sm font-semibold tracking-wide text-slate-700 mb-3 px-1">
         <div>Total Gifts: <span id="totalCount" class="font-bold text-slate-900">21</span></div>
@@ -81,6 +76,30 @@
       <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200/60">
         <div id="progressBar" class="bg-hwOrange h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
       </div>
+      <div class="flex items-center justify-between mt-2.5 px-1 text-[11px] text-slate-500">
+        <span id="liveStatus" class="inline-flex items-center gap-1.5">
+          <span id="liveDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="liveText">Live sync active</span>
+        </span>
+        <button id="toggleAuthBtn" type="button" class="font-semibold text-slate-500 hover:text-hwBlue transition">
+          Note Editor Login
+        </button>
+      </div>
+
+      <!-- Code-only login bar for updating gift notes -->
+      <div id="authPanel" class="hidden mt-3 pt-3 border-t border-slate-100">
+        <div id="authLockedRow" class="flex items-center gap-2">
+          <input id="authCodeInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter note access code" class="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-hwBlue">
+          <button id="authCheckBtn" type="button" class="px-4 py-2 bg-hwBlue hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl transition shrink-0">
+            Check ✓
+          </button>
+        </div>
+        <p id="authError" class="hidden text-xs text-red-600 font-medium mt-1.5 px-1">Incorrect code.</p>
+        <div id="authUnlockedRow" class="hidden items-center justify-between bg-blue-50/70 border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm">
+          <span class="font-semibold text-hwBlue">✓ Code verified — you can edit notes on all gifts</span>
+          <button id="authLogoutBtn" type="button" class="text-slate-600 hover:text-slate-900 font-semibold underline ml-3">Lock</button>
+        </div>
+      </div>
     </section>
 
     <!-- Mobile scroll-down cue -->
@@ -91,20 +110,20 @@
       </a>
     </div>
 
-    <!-- 3. Pure Photo Grid (1 per screen on mobile, 3 on tablet, 4 on desktop) -->
+    <!-- 3. Numbered Photo Grid (1 per screen on mobile, 3 on tablet, 4 on desktop) -->
     <section id="giftGrid" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-5 pb-10">
-      <!-- Populated dynamically from the 21 gift images -->
+      <!-- Built once on startup; updated in-place to prevent re-decoding crashes -->
     </section>
 
   </main>
 
-  <!-- 4. Confirmation & Switch Selection Modal -->
+  <!-- 4. Confirmation / Switch / Deselect / Alert Modal -->
   <div id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalMessage" class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-5 border border-slate-100">
       <p id="modalMessage" class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
         Are you sure you will gift this one?
       </p>
-      <div class="flex items-center justify-center gap-3 pt-1">
+      <div id="modalButtonsRow" class="flex items-center justify-center gap-3 pt-1">
         <button id="modalNoBtn" type="button" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-sm transition">
           No
         </button>
@@ -115,38 +134,45 @@
     </div>
   </div>
 
-  <!-- Optional Clean Photo Lightbox (tap image to view full size) -->
-  <div id="lightboxModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" onclick="closeLightbox()">
-    <button type="button" aria-label="Close preview" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 text-slate-800 font-bold text-xl flex items-center justify-center shadow-md hover:bg-white" onclick="closeLightbox()">×</button>
-    <img id="lightboxImg" src="" alt="Gift photo" class="max-h-[88svh] max-w-[94vw] rounded-xl object-contain shadow-2xl" onclick="event.stopPropagation()">
+  <!-- Clean Photo Lightbox (tap image to view full size) -->
+  <div id="lightboxModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+    <button id="lightboxCloseBtn" type="button" aria-label="Close preview" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 text-slate-800 font-bold text-xl flex items-center justify-center shadow-md hover:bg-white">×</button>
+    <img id="lightboxImg" src="" alt="Gift photo" class="max-h-[88svh] max-w-[94vw] rounded-xl object-contain shadow-2xl">
   </div>
 
   <script>
     const TOTAL_ITEMS = 21;
-    const COOKIE_NAME = 'vahe_wishlist_gift';
-    const STORAGE_KEY = 'vahe_wishlist_gift_backup';
+    const NOTE_EDITOR_CODE = '055831841';
+
+    // Cookie & local backup keys
+    const GIFT_COOKIE = 'vahe_wishlist_gift';
+    const VIEWER_COOKIE = 'vahe_viewer_id';
+    const LOCAL_STATE_CACHE = 'vahe_shared_state_v2';
+    const EDITOR_SESSION_KEY = 'vahe_note_editor_unlocked';
+
+    // Live shared cloud endpoints (verified CORS *)
+    const STORE_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a219c04f3c59e3';
+    const STREAM_TOPIC_URL = 'https://ntfy.sh/vahe-wishlist-sync-5a2a35a39965';
 
     const ITEMS = Array.from({ length: TOTAL_ITEMS }, (_, idx) => {
       const num = idx + 1;
       return {
         id: String(num),
+        num,
         src: `items%20for%20gifting/photo_${num}_2026-11-26_12-18-33.jpg`
       };
     });
 
+    // Cookie helpers with localStorage fallback
     function setCookie(name, value, days) {
       const expires = new Date(Date.now() + days * 864e5).toUTCString();
       document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-      try {
-        localStorage.setItem(STORAGE_KEY, value);
-      } catch (_) {}
+      try { localStorage.setItem(name, value); } catch (_) {}
     }
 
     function clearCookie(name) {
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; path=/; SameSite=Lax`;
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (_) {}
+      try { localStorage.removeItem(name); } catch (_) {}
     }
 
     function getCookie(name) {
@@ -155,101 +181,392 @@
         const eqIdx = part.indexOf('=');
         const key = eqIdx > -1 ? part.slice(0, eqIdx) : part;
         if (key === name) {
-          return decodeURIComponent(part.slice(eqIdx + 1));
+          const val = decodeURIComponent(part.slice(eqIdx + 1));
+          if (val) return val;
         }
       }
+      try { return localStorage.getItem(name) || null; } catch (_) { return null; }
+    }
+
+    function getOrCreateViewerId() {
+      let vid = getCookie(VIEWER_COOKIE);
+      if (!vid) {
+        vid = 'v_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        setCookie(VIEWER_COOKIE, vid, 365);
+      }
+      return vid;
+    }
+
+    const viewerId = getOrCreateViewerId();
+    let isNoteEditor = false;
+    try {
+      isNoteEditor = sessionStorage.getItem(EDITOR_SESSION_KEY) === '1';
+    } catch (_) {}
+
+    // Shared state: { claims: { [itemId]: viewerId }, notes: { [itemId]: string }, updatedAt: number }
+    let sharedState = loadCachedState();
+    let pendingGiftId = null;
+    let pendingAction = null; // 'select' | 'deselect' | 'notice'
+    let isMutating = false;
+
+    // Map of itemId -> DOM references (built once, updated in-place)
+    const cardRefs = new Map();
+
+    const localChannel = (typeof BroadcastChannel !== 'undefined')
+      ? new BroadcastChannel('vahe_wishlist_live')
+      : null;
+
+    function normalizeState(raw) {
+      const claims = {};
+      const notes = {};
+      if (raw && typeof raw === 'object') {
+        if (raw.claims && typeof raw.claims === 'object') {
+          for (const [k, v] of Object.entries(raw.claims)) {
+            if (ITEMS.some(it => it.id === k) && typeof v === 'string' && v) {
+              claims[k] = v;
+            }
+          }
+        }
+        if (raw.notes && typeof raw.notes === 'object') {
+          for (const [k, v] of Object.entries(raw.notes)) {
+            if (ITEMS.some(it => it.id === k) && typeof v === 'string') {
+              notes[k] = v;
+            }
+          }
+        }
+      }
+      const updatedAt = (raw && typeof raw.updatedAt === 'number') ? raw.updatedAt : 0;
+      return { claims, notes, updatedAt };
+    }
+
+    function loadCachedState() {
       try {
-        return localStorage.getItem(STORAGE_KEY) || null;
-      } catch (_) {
-        return null;
+        const cached = JSON.parse(localStorage.getItem(LOCAL_STATE_CACHE) || 'null');
+        if (cached) return normalizeState(cached);
+      } catch (_) {}
+      const initial = { claims: {}, notes: {}, updatedAt: 0 };
+      const cookiePick = getCookie(GIFT_COOKIE);
+      if (cookiePick && ITEMS.some(it => it.id === cookiePick)) {
+        initial.claims[cookiePick] = viewerId;
+      }
+      return initial;
+    }
+
+    function persistLocalCache(state) {
+      try { localStorage.setItem(LOCAL_STATE_CACHE, JSON.stringify(state)); } catch (_) {}
+      const myPick = getMySelectedId(state);
+      if (myPick) {
+        setCookie(GIFT_COOKIE, myPick, 365);
+      } else {
+        clearCookie(GIFT_COOKIE);
       }
     }
 
-    let selectedGiftId = getCookie(COOKIE_NAME);
-    if (selectedGiftId && !ITEMS.some(item => item.id === selectedGiftId)) {
-      selectedGiftId = null;
-    }
-    let pendingGiftId = null;
-    let pendingAction = null;
-
-    function updateCounts() {
-      const claimed = selectedGiftId ? 1 : 0;
-      const available = TOTAL_ITEMS - claimed;
-      const pct = ((claimed / TOTAL_ITEMS) * 100).toFixed(1);
-
-      document.getElementById('totalCount').textContent = String(TOTAL_ITEMS);
-      document.getElementById('claimedCount').textContent = String(claimed);
-      document.getElementById('availableCount').textContent = String(available);
-      document.getElementById('progressBar').style.width = `${pct}%`;
+    function getMySelectedId(state = sharedState) {
+      for (const [itemId, ownerId] of Object.entries(state.claims)) {
+        if (ownerId === viewerId) return itemId;
+      }
+      return null;
     }
 
-    function renderGrid() {
+    function applyIncomingState(candidate) {
+      const norm = normalizeState(candidate);
+      if (norm.updatedAt >= sharedState.updatedAt) {
+        sharedState = norm;
+        persistLocalCache(sharedState);
+        syncGridUI();
+      }
+    }
+
+    // Build all 21 cards ONCE so <img> bitmaps are never destroyed/reloaded
+    function buildGridOnce() {
       const grid = document.getElementById('giftGrid');
-      grid.innerHTML = '';
+      const frag = document.createDocumentFragment();
 
       ITEMS.forEach(item => {
-        const isSelected = selectedGiftId === item.id;
+        const card = document.createElement('article');
+        card.className = 'gift-card bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 transition';
 
-        const card = document.createElement('div');
-        card.className = isSelected
-          ? 'gift-card bg-blue-50/40 rounded-2xl border-2 border-hwBlue shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 ring-4 ring-hwBlue/10 transition'
-          : 'gift-card bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 transition hover:border-slate-300';
-
+        // Photo wrapper with #number badge
         const photoWrap = document.createElement('div');
-        photoWrap.className = 'gift-photo-wrap aspect-square w-full rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center p-1.5 cursor-zoom-in';
+        photoWrap.className = 'gift-photo-wrap relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center p-1.5 cursor-zoom-in';
+
+        const numBadge = document.createElement('span');
+        numBadge.className = 'absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-slate-900/80 text-white text-xs font-extrabold tracking-wide shadow-sm backdrop-blur-sm select-none';
+        numBadge.textContent = `#${item.num}`;
 
         const img = document.createElement('img');
         img.src = item.src;
-        img.alt = `Wishlist item ${item.id}`;
-        img.loading = Number(item.id) <= 4 ? 'eager' : 'lazy';
-        img.className = 'w-full h-full object-contain rounded-lg select-none';
-        photoWrap.onclick = () => openLightbox(img.src);
+        img.alt = `Gift #${item.num}`;
+        img.decoding = 'async';
+        img.loading = item.num <= 4 ? 'eager' : 'lazy';
+        img.className = 'w-full h-full object-contain rounded-lg select-none transition-opacity duration-200';
 
+        photoWrap.addEventListener('click', () => openLightbox(item.src));
+        photoWrap.appendChild(numBadge);
         photoWrap.appendChild(img);
 
+        // Read-only note display (shown to everyone whenever a note exists)
+        const noteDisplay = document.createElement('div');
+        noteDisplay.className = 'hidden rounded-xl bg-amber-50/80 border border-amber-200/80 px-3 py-2 text-xs text-slate-700 leading-relaxed break-words';
+
+        // Editor-only note box (shown only when code 055831841 is verified)
+        const noteEditorWrap = document.createElement('div');
+        noteEditorWrap.className = 'hidden space-y-1.5';
+
+        const noteInput = document.createElement('textarea');
+        noteInput.rows = 2;
+        noteInput.maxLength = 240;
+        noteInput.placeholder = `Write a note for Gift #${item.num}...`;
+        noteInput.className = 'w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:border-hwBlue resize-none bg-slate-50/60';
+
+        const noteSaveBtn = document.createElement('button');
+        noteSaveBtn.type = 'button';
+        noteSaveBtn.className = 'w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition';
+        noteSaveBtn.textContent = 'Save Note';
+        noteSaveBtn.addEventListener('click', () => saveGiftNote(item.id, noteInput.value, noteSaveBtn));
+
+        noteEditorWrap.appendChild(noteInput);
+        noteEditorWrap.appendChild(noteSaveBtn);
+
+        // Selection action button
         const btn = document.createElement('button');
         btn.type = 'button';
-        if (isSelected) {
-          btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwBlue hover:bg-blue-800 active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 flex items-center justify-center gap-1.5 shadow-sm';
-          btn.textContent = 'Selected ✓ (Deselect)';
-          btn.onclick = () => requestDeselectGift();
-        } else {
-          btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwOrange hover:bg-hwOrangeHover active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 shadow-sm';
-          btn.textContent = 'Select';
-          btn.onclick = () => requestSelectGift(item.id);
-        }
+        btn.addEventListener('click', () => handleCardAction(item.id));
 
         card.appendChild(photoWrap);
+        card.appendChild(noteDisplay);
+        card.appendChild(noteEditorWrap);
         card.appendChild(btn);
-        grid.appendChild(card);
+
+        cardRefs.set(item.id, { card, img, numBadge, noteDisplay, noteEditorWrap, noteInput, btn });
+        frag.appendChild(card);
       });
 
-      updateCounts();
+      grid.appendChild(frag);
     }
 
-    function requestSelectGift(id) {
-      if (selectedGiftId === id) return;
-      pendingGiftId = id;
-      pendingAction = 'select';
+    // Fast in-place UI update (never touches img.src or destroys DOM nodes)
+    function syncGridUI() {
+      let claimedTotal = 0;
 
-      const modalMessage = document.getElementById('modalMessage');
-      if (selectedGiftId !== null) {
-        modalMessage.textContent = 'If you select this one, the previous selection will be lost';
+      ITEMS.forEach(item => {
+        const ref = cardRefs.get(item.id);
+        if (!ref) return;
+
+        const owner = sharedState.claims[item.id] || null;
+        const isMine = owner === viewerId;
+        const isTakenByOther = Boolean(owner && !isMine);
+        if (owner) claimedTotal++;
+
+        // Card frame & image styling
+        if (isMine) {
+          ref.card.className = 'gift-card bg-blue-50/40 rounded-2xl border-2 border-hwBlue shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 ring-4 ring-hwBlue/10 transition';
+          ref.img.classList.remove('opacity-50', 'grayscale');
+          ref.numBadge.className = 'absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-hwBlue text-white text-xs font-extrabold tracking-wide shadow-sm select-none';
+        } else if (isTakenByOther) {
+          ref.card.className = 'gift-card bg-slate-50 rounded-2xl border border-slate-200/80 shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 transition';
+          ref.img.classList.add('opacity-50', 'grayscale');
+          ref.numBadge.className = 'absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-slate-500 text-white text-xs font-extrabold tracking-wide shadow-sm select-none';
+        } else {
+          ref.card.className = 'gift-card bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 sm:p-3 flex flex-col space-y-3 transition hover:border-slate-300';
+          ref.img.classList.remove('opacity-50', 'grayscale');
+          ref.numBadge.className = 'absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-lg bg-slate-900/80 text-white text-xs font-extrabold tracking-wide shadow-sm backdrop-blur-sm select-none';
+        }
+
+        // Note display & editor visibility
+        const noteText = (sharedState.notes[item.id] || '').trim();
+        if (isNoteEditor) {
+          ref.noteDisplay.classList.add('hidden');
+          ref.noteEditorWrap.classList.remove('hidden');
+          if (document.activeElement !== ref.noteInput) {
+            ref.noteInput.value = sharedState.notes[item.id] || '';
+          }
+        } else {
+          ref.noteEditorWrap.classList.add('hidden');
+          if (noteText) {
+            ref.noteDisplay.textContent = noteText;
+            ref.noteDisplay.classList.remove('hidden');
+          } else {
+            ref.noteDisplay.textContent = '';
+            ref.noteDisplay.classList.add('hidden');
+          }
+        }
+
+        // Button state
+        if (isMine) {
+          ref.btn.disabled = isMutating;
+          ref.btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwBlue hover:bg-blue-800 active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 flex items-center justify-center gap-1.5 shadow-sm';
+          ref.btn.textContent = 'Selected ✓ (Deselect)';
+        } else if (isTakenByOther) {
+          ref.btn.disabled = true;
+          ref.btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-slate-200 text-slate-500 font-semibold text-base sm:text-sm rounded-xl cursor-not-allowed';
+          ref.btn.textContent = 'Selected';
+        } else {
+          ref.btn.disabled = isMutating;
+          ref.btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwOrange hover:bg-hwOrangeHover active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 shadow-sm';
+          ref.btn.textContent = 'Select';
+        }
+      });
+
+      const available = Math.max(0, TOTAL_ITEMS - claimedTotal);
+      const pct = ((claimedTotal / TOTAL_ITEMS) * 100).toFixed(1);
+      document.getElementById('totalCount').textContent = String(TOTAL_ITEMS);
+      document.getElementById('claimedCount').textContent = String(claimedTotal);
+      document.getElementById('availableCount').textContent = String(available);
+      document.getElementById('progressBar').style.width = `${pct}%`;
+
+      // Auth UI sync
+      const lockedRow = document.getElementById('authLockedRow');
+      const unlockedRow = document.getElementById('authUnlockedRow');
+      const toggleBtn = document.getElementById('toggleAuthBtn');
+      if (isNoteEditor) {
+        lockedRow.classList.add('hidden');
+        unlockedRow.classList.remove('hidden');
+        unlockedRow.classList.add('flex');
+        toggleBtn.textContent = '✓ Note Editor Active';
       } else {
-        modalMessage.textContent = 'Are you sure you will gift this one?';
+        lockedRow.classList.remove('hidden');
+        unlockedRow.classList.add('hidden');
+        unlockedRow.classList.remove('flex');
+        toggleBtn.textContent = 'Note Editor Login';
+      }
+    }
+
+    function setLiveIndicator(ok, label) {
+      const dot = document.getElementById('liveDot');
+      const txt = document.getElementById('liveText');
+      dot.className = ok ? 'w-2 h-2 rounded-full bg-emerald-500' : 'w-2 h-2 rounded-full bg-amber-400';
+      txt.textContent = label;
+    }
+
+    // Fetch freshest state from persistent store + recent stream log
+    async function fetchRemoteState() {
+      let newest = null;
+
+      try {
+        const res = await fetch(STORE_URL, { cache: 'no-store' });
+        if (res.ok) {
+          const obj = await res.json();
+          if (obj && obj.data) {
+            newest = normalizeState(obj.data);
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const pollRes = await fetch(`${STREAM_TOPIC_URL}/json?poll=1&since=24h`, { cache: 'no-store' });
+        if (pollRes.ok) {
+          const text = await pollRes.text();
+          const lines = text.trim().split('\n').filter(Boolean);
+          for (const line of lines) {
+            try {
+              const evt = JSON.parse(line);
+              if (evt.event === 'message' && evt.message) {
+                const parsed = normalizeState(JSON.parse(evt.message));
+                if (!newest || parsed.updatedAt > newest.updatedAt) {
+                  newest = parsed;
+                }
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
+      if (newest) {
+        applyIncomingState(newest);
+        setLiveIndicator(true, 'Live sync active');
+      }
+      return newest;
+    }
+
+    async function pushRemoteState(nextState) {
+      persistLocalCache(nextState);
+      if (localChannel) {
+        try { localChannel.postMessage(nextState); } catch (_) {}
       }
 
-      const modal = document.getElementById('confirmModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      const payloadStr = JSON.stringify(nextState);
+      const writes = await Promise.allSettled([
+        fetch(STORE_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'vahe-wishlist-v1', data: nextState })
+        }),
+        fetch(STREAM_TOPIC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: payloadStr
+        })
+      ]);
+
+      const anyOk = writes.some(r => r.status === 'fulfilled' && r.value && r.value.ok);
+      setLiveIndicator(anyOk, anyOk ? 'Live sync active' : 'Saved locally (reconnecting...)');
     }
 
-    function requestDeselectGift() {
-      if (!selectedGiftId) return;
-      pendingGiftId = null;
-      pendingAction = 'deselect';
+    // Conflict-safe state mutation
+    async function mutateSharedState(mutator) {
+      if (isMutating) return;
+      isMutating = true;
+      syncGridUI();
+      try {
+        const remote = await fetchRemoteState();
+        const base = (remote && remote.updatedAt > sharedState.updatedAt) ? remote : sharedState;
+        const draft = {
+          claims: { ...base.claims },
+          notes: { ...base.notes },
+          updatedAt: Date.now()
+        };
 
-      document.getElementById('modalMessage').textContent = 'Are you sure you want to deselect this gift?';
+        const okToSave = mutator(draft);
+        if (okToSave === false) {
+          sharedState = base;
+          persistLocalCache(sharedState);
+          return;
+        }
+
+        sharedState = draft;
+        syncGridUI();
+        await pushRemoteState(sharedState);
+      } finally {
+        isMutating = false;
+        syncGridUI();
+      }
+    }
+
+    function handleCardAction(id) {
+      if (isMutating) return;
+      const owner = sharedState.claims[id] || null;
+      if (owner && owner !== viewerId) return; // Taken by another guest
+
+      if (owner === viewerId) {
+        openConfirmModal('deselect', id, 'Are you sure you want to deselect this gift?');
+        return;
+      }
+
+      const myCurrentPick = getMySelectedId();
+      if (myCurrentPick && myCurrentPick !== id) {
+        openConfirmModal('select', id, 'If you select this one, the previous selection will be lost');
+      } else {
+        openConfirmModal('select', id, 'Are you sure you will gift this one?');
+      }
+    }
+
+    function openConfirmModal(action, giftId, message) {
+      pendingAction = action;
+      pendingGiftId = giftId;
+      document.getElementById('modalMessage').textContent = message;
+      const noBtn = document.getElementById('modalNoBtn');
+      const yesBtn = document.getElementById('modalYesBtn');
+
+      if (action === 'notice') {
+        noBtn.classList.add('hidden');
+        yesBtn.textContent = 'OK';
+      } else {
+        noBtn.classList.remove('hidden');
+        yesBtn.textContent = 'Yes';
+      }
+
       const modal = document.getElementById('confirmModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -263,21 +580,91 @@
       modal.classList.remove('flex');
     }
 
-    function confirmGift() {
-      if (pendingAction === 'deselect') {
-        selectedGiftId = null;
-        clearCookie(COOKIE_NAME);
-        closeModal();
-        renderGrid();
+    async function confirmModalAction() {
+      const action = pendingAction;
+      const targetId = pendingGiftId;
+      closeModal();
+
+      if (!action || action === 'notice') return;
+
+      if (action === 'deselect') {
+        await mutateSharedState(draft => {
+          for (const [k, v] of Object.entries(draft.claims)) {
+            if (v === viewerId) delete draft.claims[k];
+          }
+          return true;
+        });
         return;
       }
-      if (!pendingGiftId) return;
-      selectedGiftId = pendingGiftId;
-      setCookie(COOKIE_NAME, selectedGiftId, 365);
-      closeModal();
-      renderGrid();
+
+      if (action === 'select' && targetId) {
+        let takenConflict = false;
+        await mutateSharedState(draft => {
+          const existingOwner = draft.claims[targetId];
+          if (existingOwner && existingOwner !== viewerId) {
+            takenConflict = true;
+            return false;
+          }
+          // Remove any previous selection belonging to this viewer
+          for (const [k, v] of Object.entries(draft.claims)) {
+            if (v === viewerId) delete draft.claims[k];
+          }
+          draft.claims[targetId] = viewerId;
+          return true;
+        });
+
+        if (takenConflict) {
+          openConfirmModal('notice', null, 'Sorry, another guest just selected this gift. Please pick another available item.');
+        }
+      }
     }
 
+    async function saveGiftNote(itemId, rawText, btnEl) {
+      if (!isNoteEditor) return;
+      const cleanText = rawText.trim();
+      const origLabel = btnEl.textContent;
+      btnEl.disabled = true;
+      btnEl.textContent = 'Saving...';
+
+      await mutateSharedState(draft => {
+        if (cleanText) {
+          draft.notes[itemId] = cleanText;
+        } else {
+          delete draft.notes[itemId];
+        }
+        return true;
+      });
+
+      btnEl.textContent = 'Saved ✓';
+      setTimeout(() => {
+        btnEl.disabled = false;
+        btnEl.textContent = origLabel;
+      }, 1200);
+    }
+
+    // Code login check (055831841)
+    function verifyEditorCode() {
+      const input = document.getElementById('authCodeInput');
+      const err = document.getElementById('authError');
+      if (input.value.trim() === NOTE_EDITOR_CODE) {
+        isNoteEditor = true;
+        try { sessionStorage.setItem(EDITOR_SESSION_KEY, '1'); } catch (_) {}
+        input.value = '';
+        err.classList.add('hidden');
+        syncGridUI();
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function logoutEditor() {
+      isNoteEditor = false;
+      try { sessionStorage.removeItem(EDITOR_SESSION_KEY); } catch (_) {}
+      document.getElementById('authPanel').classList.add('hidden');
+      syncGridUI();
+    }
+
+    // Lightbox helpers
     function openLightbox(src) {
       const lb = document.getElementById('lightboxModal');
       document.getElementById('lightboxImg').src = src;
@@ -291,8 +678,72 @@
       lb.classList.remove('flex');
     }
 
+    // Real-time EventSource subscription + focus/interval backup
+    function startLiveSync() {
+      fetchRemoteState();
+
+      if (typeof EventSource !== 'undefined') {
+        try {
+          const es = new EventSource(`${STREAM_TOPIC_URL}/sse`);
+          es.onmessage = (evt) => {
+            try {
+              const parsed = JSON.parse(evt.data);
+              const msg = parsed && parsed.message ? JSON.parse(parsed.message) : parsed;
+              if (msg && typeof msg === 'object' && ('claims' in msg || 'notes' in msg)) {
+                applyIncomingState(msg);
+              }
+            } catch (_) {}
+          };
+          es.onerror = () => {
+            setLiveIndicator(true, 'Syncing...');
+          };
+        } catch (_) {}
+      }
+
+      if (localChannel) {
+        localChannel.onmessage = (e) => {
+          if (e.data) applyIncomingState(e.data);
+        };
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === LOCAL_STATE_CACHE && e.newValue) {
+          try { applyIncomingState(JSON.parse(e.newValue)); } catch (_) {}
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') fetchRemoteState();
+      });
+
+      // Gentle 12s fallback poll in case mobile networks drop SSE connections
+      setInterval(() => {
+        if (document.visibilityState === 'visible' && !isMutating) {
+          fetchRemoteState();
+        }
+      }, 12000);
+    }
+
+    // Wire static controls
     document.getElementById('modalNoBtn').addEventListener('click', closeModal);
-    document.getElementById('modalYesBtn').addEventListener('click', confirmGift);
+    document.getElementById('modalYesBtn').addEventListener('click', confirmModalAction);
+    document.getElementById('lightboxModal').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxCloseBtn').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxImg').addEventListener('click', (e) => e.stopPropagation());
+
+    document.getElementById('toggleAuthBtn').addEventListener('click', () => {
+      const panel = document.getElementById('authPanel');
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden') && !isNoteEditor) {
+        document.getElementById('authCodeInput').focus();
+      }
+    });
+    document.getElementById('authCheckBtn').addEventListener('click', verifyEditorCode);
+    document.getElementById('authCodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyEditorCode();
+    });
+    document.getElementById('authLogoutBtn').addEventListener('click', logoutEditor);
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeModal();
@@ -300,7 +751,9 @@
       }
     });
 
-    renderGrid();
+    buildGridOnce();
+    syncGridUI();
+    startLiveSync();
   </script>
 </body>
 </html>

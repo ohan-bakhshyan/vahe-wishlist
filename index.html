@@ -142,6 +142,13 @@
       } catch (_) {}
     }
 
+    function clearCookie(name) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; path=/; SameSite=Lax`;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (_) {}
+    }
+
     function getCookie(name) {
       const cookies = document.cookie ? document.cookie.split('; ') : [];
       for (const part of cookies) {
@@ -163,6 +170,7 @@
       selectedGiftId = null;
     }
     let pendingGiftId = null;
+    let pendingAction = null;
 
     function updateCounts() {
       const claimed = selectedGiftId ? 1 : 0;
@@ -202,10 +210,9 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         if (isSelected) {
-          // One gift can have only one selection
-          btn.disabled = true;
-          btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwBlue text-white font-semibold text-base sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-default';
-          btn.textContent = 'Selected ✓';
+          btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwBlue hover:bg-blue-800 active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 flex items-center justify-center gap-1.5 shadow-sm';
+          btn.textContent = 'Selected ✓ (Deselect)';
+          btn.onclick = () => requestDeselectGift();
         } else {
           btn.className = 'w-full py-3 sm:py-2.5 px-4 bg-hwOrange hover:bg-hwOrangeHover active:scale-[0.99] text-white font-semibold text-base sm:text-sm rounded-xl transition duration-150 shadow-sm';
           btn.textContent = 'Select';
@@ -223,6 +230,7 @@
     function requestSelectGift(id) {
       if (selectedGiftId === id) return;
       pendingGiftId = id;
+      pendingAction = 'select';
 
       const modalMessage = document.getElementById('modalMessage');
       if (selectedGiftId !== null) {
@@ -236,14 +244,33 @@
       modal.classList.add('flex');
     }
 
+    function requestDeselectGift() {
+      if (!selectedGiftId) return;
+      pendingGiftId = null;
+      pendingAction = 'deselect';
+
+      document.getElementById('modalMessage').textContent = 'Are you sure you want to deselect this gift?';
+      const modal = document.getElementById('confirmModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
     function closeModal() {
       pendingGiftId = null;
+      pendingAction = null;
       const modal = document.getElementById('confirmModal');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
     }
 
     function confirmGift() {
+      if (pendingAction === 'deselect') {
+        selectedGiftId = null;
+        clearCookie(COOKIE_NAME);
+        closeModal();
+        renderGrid();
+        return;
+      }
       if (!pendingGiftId) return;
       selectedGiftId = pendingGiftId;
       setCookie(COOKIE_NAME, selectedGiftId, 365);
